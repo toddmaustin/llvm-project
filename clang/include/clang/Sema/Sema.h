@@ -892,6 +892,14 @@ public:
   /// initialized but before it parses anything.
   void Initialize();
 
+  // Mojo-V helper functions
+  bool isSecretType(QualType QT) const;
+  bool isSecretExpr(const Expr *E) const;
+  QualType makeSecret(QualType QT);
+  QualType propagateSecretIfAny(ArrayRef<Expr*> Ops, QualType ResultTy);
+  bool isExplicitDeclassify(const Expr *E) const;
+  void diagnoseSecretPredicate(Expr *Cond);
+
   /// This virtual key function only exists to limit the emission of debug info
   /// describing the Sema class. GCC and Clang only emit debug info for a class
   /// with a vtable when the vtable is emitted. Sema is final and not

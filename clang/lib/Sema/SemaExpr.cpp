@@ -71,6 +71,40 @@
 using namespace clang;
 using namespace sema;
 
+#ifdef notdef
+bool Sema::isSecretType(QualType QT) const {
+  QT = QT.getCanonicalType();
+  if (const auto *AT = dyn_cast_or_null<AttributedType>(QT.getTypePtr()))
+    if (AT->getAttrKind() == attr::TypeAttr::Secret) return true;
+  // If promoted later to a real qualifier, also check QT.getQualifiers().hasSecret()
+  return false;
+}
+
+bool Sema::isSecretExpr(const Expr *E) const {
+  return E && isSecretType(E->getType());
+}
+
+QualType Sema::makeSecret(QualType QT) {
+  if (isSecretType(QT)) return QT;
+  return Context.getAttributedType(attr::TypeAttr::Secret, QT, QT);
+}
+
+QualType Sema::propagateSecretIfAny(ArrayRef<Expr*> Ops, QualType ResultTy) {
+  for (const Expr *Op : Ops) if (isSecretExpr(Op)) return makeSecret(ResultTy);
+  return ResultTy;
+}
+#endif /* notdef */
+
+// Mojo-V: control predicates cannot be secret
+void diagnoseSecretPredicate(Expr *Cond) {
+#ifdef notdef
+  if (isSecretExpr(Cond)) {
+    Diag(Cond->getExprLoc(), diag::err_secret_in_branch);
+    Diag(Cond->getExprLoc(), diag::note_use_mojov_select);
+  }
+#endif /* notdef */
+}
+
 bool Sema::CanUseDecl(NamedDecl *D, bool TreatUnavailableAsInvalid) {
   // See if this is an auto-typed variable whose initializer we are parsing.
   if (ParsingInitForAutoVars.count(D))
@@ -8874,6 +8908,11 @@ ExprResult Sema::ActOnConditionalOp(SourceLocation QuestionLoc,
                                     SourceLocation ColonLoc,
                                     Expr *CondExpr, Expr *LHSExpr,
                                     Expr *RHSExpr) {
+#ifdef notdef
+  // Mojo-V: control conditions cannot be secret
+  diagnoseSecretPredicate(CondExpr);
+#endif /* notdef */
+
   // If this is the gnu "x ?: y" extension, analyze the types as though the LHS
   // was the condition.
   OpaqueValueExpr *opaqueValue = nullptr;

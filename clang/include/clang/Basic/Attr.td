@@ -438,6 +438,7 @@ def BlocksSupported : LangOpt<"Blocks">;
 def ObjCAutoRefCount : LangOpt<"ObjCAutoRefCount">;
 def ObjCNonFragileRuntime
     : LangOpt<"", "LangOpts.ObjCRuntime.allowsClassStubs()">;
+def MojoV : LangOpt<"MojoV">;
 
 def HLSL : LangOpt<"HLSL">;
 
@@ -5027,6 +5028,15 @@ def HLSLGroupSharedAddressSpace : TypeAttr {
   let Spellings = [CustomKeyword<"groupshared">];
   let Subjects = SubjectList<[Var]>;
   let Documentation = [HLSLGroupSharedAddressSpaceDocs];
+}
+
+// Mojo-V: SECRET attribute for Mojo-V compilation
+// FIXME: Do I need to use "InheritableAttr" here?
+def Secret : TypeAttr {
+  let Spellings = [Clang<"__secret__">];
+  let Subjects = SubjectList<[Var, Field]>;
+  let LangOpts = [MojoV];
+  let Documentation = [Undocumented]; // FIXME: document later
 }
 
 def HLSLParamModifier : ParameterABIAttr {

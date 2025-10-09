@@ -9446,3 +9446,10 @@ def wasm_opt : Flag<["--"], "wasm-opt">,
   Group<m_Group>,
   HelpText<"Enable the wasm-opt optimizer (default)">,
   MarshallingInfoNegativeFlag<LangOpts<"NoWasmOpt">>;
+
+// Mojo-V options
+def fmojov : Flag<["-"], "fmojov">, Group<f_Group>,
+             HelpText<"Enable the Mojo-V secret computation extension">,
+             Visibility<[ClangOption, CC1Option]>,
+             MarshallingInfoFlag<LangOpts<"MojoV">>;
+

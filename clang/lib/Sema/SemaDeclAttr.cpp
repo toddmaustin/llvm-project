@@ -6958,7 +6958,6 @@ static void handleVTablePointerAuthentication(Sema &S, Decl *D,
       CustomDiscriminationValue));
 }
 
-//===----------------------------------------------------------------------===//
 // Top Level Sema Entry Points
 //===----------------------------------------------------------------------===//
 
@@ -8348,3 +8347,4 @@ void Sema::redelayDiagnostics(DelayedDiagnosticPool &pool) {
   assert(curPool && "re-emitting in undelayed context not supported");
   curPool->steal(pool);
 }
+

@@ -13479,6 +13479,21 @@ def err_acc_device_type_multiple_archs
     : Error<"OpenACC 'device_type' clause on a 'set' construct only permits "
             "one architecture">;
 
+def err_secret_in_branch : Error<
+  "secret value cannot be used as a branch or control predicate">;
+
+def err_secret_indirect_jump : Error<
+  "secret value cannot be used as an indirect jump target">;
+
+def err_secret_as_pointer_or_index : Error<
+  "secret value cannot be used to form a memory address (pointer, index, or pointer arithmetic)">;
+
+def err_assign_secret_to_nonsecret : Error<
+  "cannot assign secret value to non-secret object">;
+
+def note_use_mojov_select : Note<
+  "use a data-oblivious conditional move (e.g. secret_cmov) instead of secret-dependent control flow">;
+
 // AMDGCN builtins diagnostics
 def err_amdgcn_load_lds_size_invalid_value : Error<"invalid size value">;
 def note_amdgcn_load_lds_size_valid_value : Note<"size must be %select{1, 2, or 4|1, 2, 4, 12 or 16}0">;

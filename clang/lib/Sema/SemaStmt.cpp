@@ -966,6 +966,11 @@ StmtResult Sema::ActOnIfStmt(SourceLocation IfLoc,
   if (Cond.isInvalid())
     return StmtError();
 
+#ifdef notdef
+  // Mojo-V: control conditions cannot be secret
+  diagnoseSecretPredicate(Cond.get());
+#endif /* notdef */
+
   bool ConstevalOrNegatedConsteval =
       StatementKind == IfStatementKind::ConstevalNonNegated ||
       StatementKind == IfStatementKind::ConstevalNegated;
@@ -1185,6 +1190,11 @@ StmtResult Sema::ActOnStartOfSwitchStmt(SourceLocation SwitchLoc,
                                         SourceLocation RParenLoc) {
   Expr *CondExpr = Cond.get().second;
   assert((Cond.isInvalid() || CondExpr) && "switch with no condition");
+
+#ifdef notdef
+  // Mojo-V: control conditions cannot be secret
+  diagnoseSecretPredicate(Cond.get());
+#endif /* notdef */
 
   if (CondExpr && !CondExpr->isTypeDependent()) {
     // We have already converted the expression to an integral or enumeration
@@ -1803,6 +1813,11 @@ StmtResult Sema::ActOnWhileStmt(SourceLocation WhileLoc,
   if (Cond.isInvalid())
     return StmtError();
 
+#ifdef notdef
+  // Mojo-V: control conditions cannot be secret
+  diagnoseSecretPredicate(Cond.get());
+#endif /* notdef */
+
   auto CondVal = Cond.get();
   CheckBreakContinueBinding(CondVal.second);
 
@@ -1831,6 +1846,11 @@ Sema::ActOnDoStmt(SourceLocation DoLoc, Stmt *Body,
                   SourceLocation WhileLoc, SourceLocation CondLParen,
                   Expr *Cond, SourceLocation CondRParen) {
   assert(Cond && "ActOnDoStmt(): missing expression");
+
+#ifdef notdef
+  // Mojo-V: control conditions cannot be secret
+  diagnoseSecretPredicate(Cond.get());
+#endif /* notdef */
 
   CheckBreakContinueBinding(Cond);
   ExprResult CondResult = CheckBooleanCondition(DoLoc, Cond);
@@ -2302,6 +2322,14 @@ StmtResult Sema::ActOnForStmt(SourceLocation ForLoc, SourceLocation LParenLoc,
                                : diag::ext_c23_non_variable_decl_in_for);
     }
   }
+
+#ifdef notdef
+  if (Second.get().second)
+  {
+    // Mojo-V: control conditions cannot be secret
+    diagnoseSecretPredicate(Second.get().second);
+  }
+#endif /* notdef */
 
   CheckBreakContinueBinding(Second.get().second);
   CheckBreakContinueBinding(third.get());

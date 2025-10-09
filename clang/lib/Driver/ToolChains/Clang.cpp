@@ -5986,6 +5986,10 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("-fno-direct-access-external-data");
   }
 
+  // Mojo-V: pass argument to CC1 phase
+  if (Args.hasArg(options::OPT_fmojov))
+    CmdArgs.push_back("-fmojov");
+
   if (Triple.isOSBinFormatELF() && (Triple.isAArch64() || Triple.isX86()))
     Args.addOptOutFlag(CmdArgs, options::OPT_fplt, options::OPT_fno_plt);
 
