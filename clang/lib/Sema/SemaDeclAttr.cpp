@@ -6958,6 +6958,14 @@ static void handleVTablePointerAuthentication(Sema &S, Decl *D,
       CustomDiscriminationValue));
 }
 
+
+// Mojo-V: handle SecretAttr attribute
+static void handleSecretAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
+
+  D->addAttr(::new (S.Context) SecretAttr(S.Context, AL));
+}
+
+
 // Top Level Sema Entry Points
 //===----------------------------------------------------------------------===//
 
@@ -7880,6 +7888,11 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
 
   case ParsedAttr::AT_VTablePointerAuthentication:
     handleVTablePointerAuthentication(S, D, AL);
+    break;
+
+  // Mojo-V: process SecretAttr
+  case ParsedAttr::AT_Secret:
+    handleSecretAttr(S, D, AL);
     break;
   }
 }

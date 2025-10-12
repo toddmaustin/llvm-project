@@ -45,6 +45,30 @@
 using namespace clang;
 using namespace sema;
 
+// Mojo-V: start of Mojo-V helper functions
+
+void Sema::diagnoseSecretPredicate(Expr *cond) {
+  if (isSecretExpr(cond)) {
+    Diag(cond->getExprLoc(), diag::err_secret_in_branch);
+    Diag(cond->getExprLoc(), diag::note_use_mojov_select);
+  }
+}
+
+void Sema::diagnoseSecretPredicate(ConditionResult *cond) {
+  if (cond) {
+    if (Expr *condExpr = cond->get().second)
+      diagnoseSecretPredicate(condExpr);
+
+    if (VarDecl *condVar = cond->get().first) {
+      if (condVar->hasAttr<SecretAttr>()) {
+        Diag(condVar->getLocation(), diag::err_secret_in_branch);
+      }
+    }
+  }
+}
+
+// Mojo-V: end of Mojo-V helper functions
+
 StmtResult Sema::ActOnExprStmt(ExprResult FE, bool DiscardedValue) {
   if (FE.isInvalid())
     return StmtError();
@@ -966,10 +990,8 @@ StmtResult Sema::ActOnIfStmt(SourceLocation IfLoc,
   if (Cond.isInvalid())
     return StmtError();
 
-#ifdef notdef
   // Mojo-V: control conditions cannot be secret
-  diagnoseSecretPredicate(Cond.get());
-#endif /* notdef */
+  diagnoseSecretPredicate(&Cond);
 
   bool ConstevalOrNegatedConsteval =
       StatementKind == IfStatementKind::ConstevalNonNegated ||

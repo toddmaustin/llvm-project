@@ -71,39 +71,37 @@
 using namespace clang;
 using namespace sema;
 
-#ifdef notdef
-bool Sema::isSecretType(QualType QT) const {
-  QT = QT.getCanonicalType();
-  if (const auto *AT = dyn_cast_or_null<AttributedType>(QT.getTypePtr()))
-    if (AT->getAttrKind() == attr::TypeAttr::Secret) return true;
-  // If promoted later to a real qualifier, also check QT.getQualifiers().hasSecret()
+// Mojo-V: start of Mojo-V helper functions
+bool Sema::isSecretDecl(const Decl *D) const {
+  if (const auto *VD = dyn_cast_or_null<VarDecl>(D))
+    return VD->hasAttr<SecretAttr>();
+  if (const auto *FD = dyn_cast_or_null<FieldDecl>(D))
+    return FD->hasAttr<SecretAttr>();
+  if (const auto *PD = dyn_cast_or_null<ParmVarDecl>(D))
+    return PD->hasAttr<SecretAttr>();
   return false;
 }
 
 bool Sema::isSecretExpr(const Expr *E) const {
-  return E && isSecretType(E->getType());
-}
+  if (!E) return false;
 
-QualType Sema::makeSecret(QualType QT) {
-  if (isSecretType(QT)) return QT;
-  return Context.getAttributedType(attr::TypeAttr::Secret, QT, QT);
-}
+  // Base case: variable, parameter, or field reference
+  if (const auto *DRE = dyn_cast<DeclRefExpr>(E->IgnoreParenImpCasts()))
+    return isSecretDecl(DRE->getDecl());
+  if (const auto *ME = dyn_cast<MemberExpr>(E->IgnoreParenImpCasts()))
+    return isSecretDecl(ME->getMemberDecl());
 
-QualType Sema::propagateSecretIfAny(ArrayRef<Expr*> Ops, QualType ResultTy) {
-  for (const Expr *Op : Ops) if (isSecretExpr(Op)) return makeSecret(ResultTy);
-  return ResultTy;
-}
-#endif /* notdef */
-
-// Mojo-V: control predicates cannot be secret
-void diagnoseSecretPredicate(Expr *Cond) {
-#ifdef notdef
-  if (isSecretExpr(Cond)) {
-    Diag(Cond->getExprLoc(), diag::err_secret_in_branch);
-    Diag(Cond->getExprLoc(), diag::note_use_mojov_select);
+  // Recursive check: any child Stmt that is an Expr and secret makes this secret
+  for (const Stmt *Sub : E->children()) {
+    if (const auto *SubE = dyn_cast_or_null<Expr>(Sub)) {
+      if (isSecretExpr(SubE))
+        return true;
+    }
   }
-#endif /* notdef */
+
+  return false;
 }
+// Mojo-V: end of Mojo-V helper functions
 
 bool Sema::CanUseDecl(NamedDecl *D, bool TreatUnavailableAsInvalid) {
   // See if this is an auto-typed variable whose initializer we are parsing.

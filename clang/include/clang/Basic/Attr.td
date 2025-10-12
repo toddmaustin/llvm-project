@@ -5031,10 +5031,9 @@ def HLSLGroupSharedAddressSpace : TypeAttr {
 }
 
 // Mojo-V: SECRET attribute for Mojo-V compilation
-// FIXME: Do I need to use "InheritableAttr" here?
-def Secret : TypeAttr {
-  let Spellings = [Clang<"__secret__">];
-  let Subjects = SubjectList<[Var, Field]>;
+def Secret : InheritableAttr {
+  let Spellings = [GNU<"__secret__">];
+  let Subjects = SubjectList<[Var, Field, ParmVar]>;
   let LangOpts = [MojoV];
   let Documentation = [Undocumented]; // FIXME: document later
 }
