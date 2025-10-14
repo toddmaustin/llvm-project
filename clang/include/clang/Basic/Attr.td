@@ -5033,7 +5033,7 @@ def HLSLGroupSharedAddressSpace : TypeAttr {
 // Mojo-V: SECRET attribute for Mojo-V compilation
 def Secret : InheritableAttr {
   let Spellings = [GNU<"__secret__">];
-  let Subjects = SubjectList<[Var, Field, ParmVar]>;
+  let Subjects = SubjectList<[Var, Field, ParmVar, Function]>;
   let LangOpts = [MojoV];
   let Documentation = [Undocumented]; // FIXME: document later
 }

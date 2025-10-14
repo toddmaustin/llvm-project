@@ -3920,6 +3920,19 @@ Sema::ActOnReturnStmt(SourceLocation ReturnLoc, Expr *RetValExp,
 
   CheckInvalidBuiltinCountedByRef(RetVal.get(),
                                   BuiltinCountedByRefKind::ReturnArg);
+  //
+  // Mojo-V: cannot return a secret in a non-secret function
+  if (RetVal.get()) {
+    const FunctionDecl *FD = getCurFunctionDecl();
+    bool FnSecret = isSecretFunction(FD);
+    bool RetValSecret = isSecretExpr(RetVal.get());
+
+    // secret to non-secret (forbidden unless declassified or function is secret)
+    if (!FnSecret && RetValSecret) {
+      Diag(RetVal.get()->getExprLoc(), diag::err_secret_return_from_nonsecret_fn);
+      return StmtError();
+    }
+  }
 
   StmtResult R =
       BuildReturnStmt(ReturnLoc, RetVal.get(), /*AllowRecovery=*/true);

@@ -7767,6 +7767,7 @@ public:
   // Mojo-V helper functions
   bool isSecretDecl(const Decl *D) const;
   bool isSecretExpr(const Expr *E) const;
+  bool isSecretFunction(const FunctionDecl *FD) const;
   void diagnoseSecretPredicate(Expr*);
   void diagnoseSecretPredicate(ConditionResult);
   void diagnoseSecretPredicate(VarDecl*);

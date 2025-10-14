@@ -72,6 +72,7 @@ using namespace clang;
 using namespace sema;
 
 // Mojo-V: start of Mojo-V helper functions
+//
 bool Sema::isSecretDecl(const Decl *D) const {
   if (const auto *VD = dyn_cast_or_null<VarDecl>(D))
     return VD->hasAttr<SecretAttr>();
@@ -101,6 +102,11 @@ bool Sema::isSecretExpr(const Expr *E) const {
 
   return false;
 }
+
+bool Sema::isSecretFunction(const FunctionDecl *FD) const {
+  return FD && FD->hasAttr<SecretAttr>();
+}
+
 // Mojo-V: end of Mojo-V helper functions
 
 bool Sema::CanUseDecl(NamedDecl *D, bool TreatUnavailableAsInvalid) {
@@ -4973,6 +4979,15 @@ ExprResult Sema::ActOnArraySubscriptExpr(Scope *S, Expr *base,
         << SourceRange(base->getBeginLoc(), rbLoc);
     return ExprError();
   }
+
+  // Mojo-V: all ArgExprs Expr's must be non-secret
+  for (size_t i = 0, e = ArgExprs.size(); i != e; i++) {
+    if (isSecretExpr(ArgExprs[i])) {
+      Diag(ArgExprs[i]->getExprLoc(), diag::err_secret_as_pointer_or_index);
+      return ExprError();
+    }
+  }
+
   // If the base is a MatrixSubscriptExpr, try to create a new
   // MatrixSubscriptExpr.
   auto *matSubscriptE = dyn_cast<MatrixSubscriptExpr>(base);
@@ -6734,6 +6749,24 @@ ExprResult Sema::BuildCallExpr(Scope *Scope, Expr *Fn, SourceLocation LParenLoc,
     }
   } else if (auto *ME = dyn_cast<MemberExpr>(NakedFn))
     NDecl = ME->getMemberDecl();
+
+  // --- Mojo-V: forbid indirect calls when the callee expression is secret ---
+  //
+  // We treat calls as "direct" only when the callee is a plain DeclRefExpr to a
+  // FunctionDecl (e.g., foo()). Everything else (address-of function, function
+  // pointers, member pointers, lambdas-as-callables, etc.) is considered indirect
+  // for the purpose of this policy.
+  //
+  // If the callee expression is secret AND the call is indirect, emit an error.
+  {
+    bool IsDirectCall = isa<DeclRefExpr>(NakedFn) && isa<FunctionDecl>(NDecl);
+    if (!IsDirectCall && isSecretExpr(Fn)) {
+      Diag(Fn->getExprLoc(), diag::err_secret_indirect_jump);
+      return ExprError();
+    }
+  }
+  // --- end Mojo-V addition ---
+
 
   if (FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(NDecl)) {
     if (CallingNDeclIndirectly && !checkAddressOfFunctionIsAvailable(
@@ -13982,6 +14015,15 @@ QualType Sema::CheckAssignmentOperands(Expr *LHSExpr, ExprResult &RHS,
     BoundsSafetyCheckAssignmentToCountAttrPtr(
         LHSType, RHS.get(), AssignmentAction::Assigning, Loc, Assignee,
         ShowFullyQualifiedAssigneeName);
+  }
+
+  // --- Mojo-V Secret Trap Semantics ---
+  if (isSecretExpr(RHS.get())) {
+    bool LHSSecret = isSecretExpr(LHSExpr);
+    if (!LHSSecret) {
+      Diag(RHS.get()->getExprLoc(), diag::err_assign_secret_to_nonsecret);
+      return QualType();
+    }
   }
 
   // OpenCL v1.2 s6.1.1.1 p2:

@@ -13479,6 +13479,9 @@ def err_acc_device_type_multiple_archs
     : Error<"OpenACC 'device_type' clause on a 'set' construct only permits "
             "one architecture">;
 
+//
+// Mojo-V: error messages related to secret computation
+//
 def err_secret_in_branch : Error<
   "secret value cannot be used as a branch or control predicate">;
 
@@ -13490,6 +13493,12 @@ def err_secret_as_pointer_or_index : Error<
 
 def err_assign_secret_to_nonsecret : Error<
   "cannot assign secret value to non-secret object">;
+
+def err_secret_cast_to_pointer : Error<
+  "cannot cast secret value to a pointer, index, or address">;
+
+def err_secret_return_from_nonsecret_fn : Error<
+  "cannot return a secret value in a non-secret function">;
 
 def note_use_mojov_select : Note<
   "use a data-oblivious conditional move (e.g. secret_cmov) instead of secret-dependent control flow">;

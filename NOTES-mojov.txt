@@ -1,3 +1,4 @@
 
 cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=/opt/riscv-llvm -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_TARGETS_TO_BUILD="RISCV" -DCMAKE_BUILD_TYPE="Debug" -DLLVM_ENABLE_ASSERTIONS=On -DLLVM_DEFAULT_TARGET_TRIPLE="riscv64-unknown-elf" ../llvm
 
+../../riscv-isa-sim/build/spike -l --isa=rv64gc_zicond_zkmojov --misaligned --extlib=../target/spike_mmio_plugin.so -m0x100000:0x820000 --device=spike_mmio_plugin,0x20000 ./mojov-test.elf |& grep -m1 -A3 -B3 "exception"

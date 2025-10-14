@@ -1271,6 +1271,14 @@ void CastOperation::CheckReinterpretCast() {
   if (SrcExpr.isInvalid()) // if conversion failed, don't report another error
     return;
 
+  // Mojo-V: forbid secret pointer/address reinterpret_cast ---
+  if (Self.isSecretExpr(SrcExpr.get()) && DestType->isPointerType()) {
+    Self.Diag(OpRange.getBegin(), diag::err_secret_cast_to_pointer)
+        << SrcExpr.get()->getSourceRange();
+    SrcExpr = ExprError();
+    return;
+  }
+
   unsigned msg = diag::err_bad_cxx_cast_generic;
   TryCastResult tcr =
     TryReinterpretCast(Self, SrcExpr, DestType,
@@ -3007,6 +3015,14 @@ static void DiagnoseBadFunctionCast(Sema &Self, const ExprResult &SrcExpr,
 /// Check the semantics of a C-style cast operation, in C.
 void CastOperation::CheckCStyleCast() {
   assert(!Self.getLangOpts().CPlusPlus);
+
+  // --- Mojo-V: forbid secret → pointer or address C-style cast ---
+  if (Self.isSecretExpr(SrcExpr.get()) && DestType->isPointerType()) {
+    Self.Diag(OpRange.getBegin(), diag::err_secret_cast_to_pointer)
+        << SrcExpr.get()->getSourceRange();
+    SrcExpr = ExprError();
+    return;
+  }
 
   // C-style casts can resolve __unknown_any types.
   if (claimPlaceholder(BuiltinType::UnknownAny)) {
