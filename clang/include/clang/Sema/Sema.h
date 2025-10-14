@@ -7767,8 +7767,9 @@ public:
   // Mojo-V helper functions
   bool isSecretDecl(const Decl *D) const;
   bool isSecretExpr(const Expr *E) const;
-  void diagnoseSecretPredicate(clang::Expr*);
-  void diagnoseSecretPredicate(ConditionResult*);
+  void diagnoseSecretPredicate(Expr*);
+  void diagnoseSecretPredicate(ConditionResult);
+  void diagnoseSecretPredicate(VarDecl*);
 
   /// CheckBooleanCondition - Diagnose problems involving the use of
   /// the given expression as a boolean condition (e.g. in an if

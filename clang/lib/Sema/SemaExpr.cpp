@@ -8906,10 +8906,8 @@ ExprResult Sema::ActOnConditionalOp(SourceLocation QuestionLoc,
                                     SourceLocation ColonLoc,
                                     Expr *CondExpr, Expr *LHSExpr,
                                     Expr *RHSExpr) {
-#ifdef notdef
   // Mojo-V: control conditions cannot be secret
   diagnoseSecretPredicate(CondExpr);
-#endif /* notdef */
 
   // If this is the gnu "x ?: y" extension, analyze the types as though the LHS
   // was the condition.

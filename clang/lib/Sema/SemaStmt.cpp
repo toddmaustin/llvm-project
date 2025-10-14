@@ -48,22 +48,28 @@ using namespace sema;
 // Mojo-V: start of Mojo-V helper functions
 
 void Sema::diagnoseSecretPredicate(Expr *cond) {
-  if (isSecretExpr(cond)) {
+  if (cond && isSecretExpr(cond)) {
     Diag(cond->getExprLoc(), diag::err_secret_in_branch);
     Diag(cond->getExprLoc(), diag::note_use_mojov_select);
   }
 }
 
-void Sema::diagnoseSecretPredicate(ConditionResult *cond) {
-  if (cond) {
-    if (Expr *condExpr = cond->get().second)
-      diagnoseSecretPredicate(condExpr);
+void Sema::diagnoseSecretPredicate(ConditionResult cond) {
+  if (Expr *condExpr = cond.get().second)
+    diagnoseSecretPredicate(condExpr);
 
-    if (VarDecl *condVar = cond->get().first) {
-      if (condVar->hasAttr<SecretAttr>()) {
-        Diag(condVar->getLocation(), diag::err_secret_in_branch);
-      }
+  if (VarDecl *condVar = cond.get().first) {
+    if (condVar->hasAttr<SecretAttr>()) {
+      Diag(condVar->getLocation(), diag::err_secret_in_branch);
+      Diag(condVar->getLocation(), diag::note_use_mojov_select);
     }
+  }
+}
+
+void Sema::diagnoseSecretPredicate(VarDecl *var) {
+  if (var && var->hasAttr<SecretAttr>()) {
+      Diag(var->getLocation(), diag::err_secret_in_branch);
+      Diag(var->getLocation(), diag::note_use_mojov_select);
   }
 }
 
@@ -125,6 +131,9 @@ void Sema::ActOnForEachDeclStmt(DeclGroupPtrTy dg) {
     decl->setInvalidDecl();
     return;
   }
+
+  // Mojo-V decl cannot be secret
+  diagnoseSecretPredicate(var);
 
   // foreach variables are never actually initialized in the way that
   // the parser came up with.
@@ -991,7 +1000,7 @@ StmtResult Sema::ActOnIfStmt(SourceLocation IfLoc,
     return StmtError();
 
   // Mojo-V: control conditions cannot be secret
-  diagnoseSecretPredicate(&Cond);
+  diagnoseSecretPredicate(Cond);
 
   bool ConstevalOrNegatedConsteval =
       StatementKind == IfStatementKind::ConstevalNonNegated ||
@@ -1213,10 +1222,8 @@ StmtResult Sema::ActOnStartOfSwitchStmt(SourceLocation SwitchLoc,
   Expr *CondExpr = Cond.get().second;
   assert((Cond.isInvalid() || CondExpr) && "switch with no condition");
 
-#ifdef notdef
   // Mojo-V: control conditions cannot be secret
-  diagnoseSecretPredicate(Cond.get());
-#endif /* notdef */
+  diagnoseSecretPredicate(Cond);
 
   if (CondExpr && !CondExpr->isTypeDependent()) {
     // We have already converted the expression to an integral or enumeration
@@ -1835,10 +1842,8 @@ StmtResult Sema::ActOnWhileStmt(SourceLocation WhileLoc,
   if (Cond.isInvalid())
     return StmtError();
 
-#ifdef notdef
   // Mojo-V: control conditions cannot be secret
-  diagnoseSecretPredicate(Cond.get());
-#endif /* notdef */
+  diagnoseSecretPredicate(Cond);
 
   auto CondVal = Cond.get();
   CheckBreakContinueBinding(CondVal.second);
@@ -1869,10 +1874,8 @@ Sema::ActOnDoStmt(SourceLocation DoLoc, Stmt *Body,
                   Expr *Cond, SourceLocation CondRParen) {
   assert(Cond && "ActOnDoStmt(): missing expression");
 
-#ifdef notdef
   // Mojo-V: control conditions cannot be secret
-  diagnoseSecretPredicate(Cond.get());
-#endif /* notdef */
+  diagnoseSecretPredicate(Cond);
 
   CheckBreakContinueBinding(Cond);
   ExprResult CondResult = CheckBooleanCondition(DoLoc, Cond);
@@ -2345,13 +2348,8 @@ StmtResult Sema::ActOnForStmt(SourceLocation ForLoc, SourceLocation LParenLoc,
     }
   }
 
-#ifdef notdef
-  if (Second.get().second)
-  {
-    // Mojo-V: control conditions cannot be secret
-    diagnoseSecretPredicate(Second.get().second);
-  }
-#endif /* notdef */
+  // Mojo-V: control conditions cannot be secret
+  diagnoseSecretPredicate(Second);
 
   CheckBreakContinueBinding(Second.get().second);
   CheckBreakContinueBinding(third.get());
@@ -2381,6 +2379,9 @@ StmtResult Sema::ActOnForEachLValueExpr(Expr *E) {
   ExprResult result = CheckPlaceholderExpr(E);
   if (result.isInvalid()) return StmtError();
   E = result.get();
+
+  // Mojo-V: for-each expressions cannot be secret
+  diagnoseSecretPredicate(E);
 
   ExprResult FullExpr = ActOnFinishFullExpr(E, /*DiscardedValue*/ false);
   if (FullExpr.isInvalid())
@@ -3297,6 +3298,9 @@ StmtResult Sema::ActOnGotoStmt(SourceLocation GotoLoc,
 StmtResult
 Sema::ActOnIndirectGotoStmt(SourceLocation GotoLoc, SourceLocation StarLoc,
                             Expr *E) {
+  // Mojo-V: target of goto cannot be a secret value
+  diagnoseSecretPredicate(E);
+
   // Convert operand to void*
   if (!E->isTypeDependent()) {
     QualType ETy = E->getType();
