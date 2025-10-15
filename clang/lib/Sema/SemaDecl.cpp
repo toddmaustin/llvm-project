@@ -13618,6 +13618,18 @@ void Sema::AddInitializerToDecl(Decl *RealDecl, Expr *Init, bool DirectInit) {
     return;
   }
 
+  // --- Mojo-V: final trap guard for all variable initializers ---
+  if (auto *VD = dyn_cast<VarDecl>(RealDecl)) {
+    if (Init) {
+      InitializedEntity Entity = InitializedEntity::InitializeVariable(VD);
+      if (!isSecretDecl(Entity.getDecl()) && isSecretExpr(Init)) {
+        Diag(Init->getExprLoc(), diag::err_assign_secret_to_nonsecret);
+        VD->setInvalidDecl();
+        return;
+      }
+    }
+  }
+
   if (auto *Method = dyn_cast<CXXMethodDecl>(RealDecl)) {
     if (!Method->isInvalidDecl()) {
       // Pure-specifiers are handled in ActOnPureSpecifier.
