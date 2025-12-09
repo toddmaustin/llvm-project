@@ -9911,18 +9911,6 @@ Sema::PerformCopyInitialization(const InitializedEntity &Entity,
   if (Init.isInvalid())
     return ExprError();
 
-  // --- Mojo-V Secret Trap Semantics for Initialization ---
-  const Expr *initStripped = Init.get()->IgnoreParenImpCasts();
-  if (isSecretExpr(initStripped)) {
-    const Decl *TargetDecl = Entity.getDecl();
-
-    // Determine whether the target is declared secret.
-    if (!isSecretDecl(TargetDecl)) {
-      Diag(Init.get()->getExprLoc(), diag::err_assign_secret_to_nonsecret);
-      return ExprError();
-    }
-  }
-
   Expr *InitE = Init.get();
   assert(InitE && "No initialization expression?");
 
